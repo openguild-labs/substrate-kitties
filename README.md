@@ -221,6 +221,110 @@ pub(super) type KittiesOwned<T: Config> = StorageMap<
 pub(super) type AllKittiesCount<T: Config> = StorageValue<_, u64, ValueQuery>;
 ```
 
+### Step 3: Learn about dispatchable functions, event and write a method to mint a new kitty
+
+#### Dispatchable functions
+
+- [TheLowLevelers - What is Pallet? (Vietnamese)](https://lowlevelers.com/blog/polkadot/code-breakdown-pallet-template)
+- [Substrate Docs - Specify the origin for a call](https://docs.substrate.io/tutorials/build-application-logic/specify-the-origin-for-a-call/)
+
+When users interact with a blockchain they call dispatchable functions to do something. Because those functions are called from the outside of the blockchain interface, in Polkadot's terms any action that involves a dispatchable function is an **Extrinsic**.
+
+```rust
+#[pallet::call_index(0)]
+#[pallet::weight(T::WeightInfo::dispatchable_function_name())]
+pub fn dispatchable_function_name(origin: OriginFor<T>) -> DispatchResult
+```
+
+A function signature of a dispatchable function declared in the Pallet code must return a `DispatchResult` and accept a first parameter is an origin typed `OriginFor<T>`.
+
+#### Events & Errors
+
+Events and errors are used to notify about specific activity. Please use this for debugging purpose only. Events and Errors should not be used as a communication method between functionalities.
+
+In our codebase, we will declare these errors and events. The syntax is basically Rust code but with macro `#[pallet::error]`
+
+```rust
+// Errors inform users that something went wrong.
+#[pallet::error]
+pub enum Error<T> {
+ /// An account may only own `MaxKittiesOwned` kitties.
+ TooManyOwned,
+ /// This kitty already exists!
+ DuplicateKitty,
+ /// An overflow has occurred!
+ Overflow,
+ /// This kitty does not exist!
+ NoKitty,
+ /// You are not the owner of this kitty.
+ NotOwner,
+ /// Trying to transfer or buy a kitty from oneself.
+ TransferToSelf,
+ /// Ensures that the buying price is greater than the asking price.
+ BidPriceTooLow,
+ /// This kitty is not for sale.
+ NotForSale,
+}
+```
+
+And comment out the `Created` event so that we can deposit an event on new kitty minted.
+
+```rust
+#[pallet::event]
+#[pallet::generate_deposit(pub(super) fn deposit_event)]
+pub enum Event<T: Config> {
+ // A new kitty was successfully created.
+ Created { kitty: T::Hash, owner: T::AccountId },
+}
+```
+
+To dispatch an event, we do
+
+```rust
+// deposit a new event when the kitty is created
+Self::deposit_event(Event::Created { kitty: kitty_dna, owner: sender });
+```
+
+#### Write a method to mint a new kitty
+
+```rust
+/// Create a new unique kitty.
+#[pallet::call_index(0)]
+#[pallet::weight(T::WeightInfo::create_kitty())]
+pub fn create_kitty(origin: OriginFor<T>) -> DispatchResult {
+ // Ensure that sender did sign this extrinsic call
+ let sender = ensure_signed(origin)?;
+
+ // Generate a randome DNA (this will be guided in 4-onchain-randomness)
+ let kitty_dna = Pallet::<T>::gen_dna(&sender);
+ ensure!(!<Kitties<T>>::contains_key(kitty_dna), Error::<T>::DuplicateKitty);
+
+ // 1. map the new DNA with the struct data of Kitty
+ // ERROR: We throw an error if there exists a Kitty already
+ <Kitties<T>>::insert(kitty_dna, Kitty::<T>::new(kitty_dna, sender.clone()));
+
+ // 2. map the new DNA with its new owner
+ // ERROR: We throw an error if there exists a Kitty already
+ ensure!(!<KittyOwner<T>>::contains_key(kitty_dna), Error::<T>::DuplicateKitty);
+ <KittyOwner<T>>::insert(kitty_dna, Some(&sender));
+
+ // 3. update the total count of kitties
+ let new_all_kitties_count =
+  Self::all_kitties_count().checked_add(1).ok_or(Error::<T>::Overflow).unwrap();
+ <AllKittiesCount<T>>::put(new_all_kitties_count);
+
+ // 4. push the new kitty DNA to the list of existing kitties owned by a sender
+ KittiesOwned::<T>::try_append(&sender, kitty_dna)
+  // ERROR: We throw an error if there are too many Kitties owned by the sender
+  .map_err(|_| Error::<T>::TooManyOwned)?;
+
+ // EVENT: Deposit a new event when the kitty is created
+ Self::deposit_event(Event::Created { kitty: kitty_dna, owner: sender });
+
+ Ok(())
+}
+```
+
 ## How to contribute
 
 Before committing to the tasks in the community, please skim through the guidelines below to grasp the overall idea of how the community works first. It does not take long but I believe it will give you a big picture of the vision and culture of TheLowLevelers.

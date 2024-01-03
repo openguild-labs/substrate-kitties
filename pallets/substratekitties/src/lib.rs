@@ -10,6 +10,8 @@ mod benchmarking;
 pub mod weights;
 pub use weights::*;
 
+use frame_support::sp_runtime::traits::Hash;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -82,11 +84,12 @@ pub mod pallet {
 
 	/// [2-data-structure]: Keep track of kitties owned by the owner account
 	#[pallet::storage]
+	#[pallet::getter(fn kitties_owned)]
 	pub(super) type KittiesOwned<T: Config> = StorageMap<
 		_,
 		Twox64Concat,
 		T::AccountId,
-		BoundedVec<[u8; 16], T::MaxKittiesOwned>,
+		BoundedVec<T::Hash, T::MaxKittiesOwned>,
 		ValueQuery,
 	>;
 
@@ -107,8 +110,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		// A new kitty was successfully created.
-		// TODO: Created { kitty: [u8; 16], owner: T::AccountId },
-
+		Created { kitty: T::Hash, owner: T::AccountId },
 		// A kitty was successfully transferred.
 		// TODO: Transferred { from: T::AccountId, to: T::AccountId, kitty: [u8; 16] },
 
@@ -149,7 +151,30 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		#[pallet::weight(T::WeightInfo::create_kitty())]
 		pub fn create_kitty(origin: OriginFor<T>) -> DispatchResult {
-			todo!("create_kitty: create a new kitty with the owner as the extrinsic origin");
+			let sender = ensure_signed(origin)?;
+			let kitty_dna = Pallet::<T>::gen_dna(&sender);
+			ensure!(!<Kitties<T>>::contains_key(kitty_dna), Error::<T>::DuplicateKitty);
+
+			// 1. map the new DNA with the struct data of Kitty
+			<Kitties<T>>::insert(kitty_dna, Kitty::<T>::new(kitty_dna, sender.clone()));
+
+			// 2. map the new DNA with its new owner
+			ensure!(!<KittyOwner<T>>::contains_key(kitty_dna), Error::<T>::DuplicateKitty);
+			<KittyOwner<T>>::insert(kitty_dna, Some(&sender));
+
+			// 3. update the total count of kitties
+			let new_all_kitties_count =
+				Self::all_kitties_count().checked_add(1).ok_or(Error::<T>::Overflow).unwrap();
+			<AllKittiesCount<T>>::put(new_all_kitties_count);
+
+			// 4. push the new kitty DNA to the list of existing kitties owned by a sender
+			KittiesOwned::<T>::try_append(&sender, kitty_dna)
+				.map_err(|_| Error::<T>::TooManyOwned)?;
+
+			// deposit a new event when the kitty is created
+			Self::deposit_event(Event::Created { kitty: kitty_dna, owner: sender });
+
+			Ok(())
 		}
 
 		/// Directly transfer a kitty to another recipient.
@@ -193,9 +218,11 @@ pub mod pallet {
 
 	// Pallet's internal functions.
 	impl<T: Config> Pallet<T> {
-		// Generates and returns DNA and Gender
-		fn gen_dna() -> ([u8; 16], Gender) {
-			todo!("gen_dna: Generate a unique DNA for the Kitty");
+		// [4-onchain-randomness] Generates and returns DNA and Gender
+		fn gen_dna(minter: &T::AccountId) -> T::Hash {
+			let (output, block_number) = T::KittyRandomness::random(&b"dna"[..]);
+			let payload = (output, block_number, minter);
+			T::Hashing::hash_of(&payload)
 		}
 	}
 }
