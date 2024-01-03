@@ -581,6 +581,8 @@ It simply get the data from the `System` pallet about the accounts on the existi
 
 I guess that's enough for the overall idea of the frontend code. After retrieving the data from the Substrate node, the part of visualizing it is your thing.
 
+![Screenshot 2024-01-03 at 22 37 10](https://github.com/lowlevelers/substrate-kitties/assets/56880684/a97df5cb-94f8-4d38-8abd-18642c9c87bb)
+
 Also, I might miss this. If you are interested into how the unique Kitty image is generated, please take a look at `KittyAvatar.js`.
 
 ```javascript
