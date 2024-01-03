@@ -77,7 +77,7 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			// Update storage.
-			<Something<T>>::put(something);
+			<Something<T>>::put(something * 100);
 
 			// Emit an event.
 			Self::deposit_event(Event::SomethingStored { something, who });

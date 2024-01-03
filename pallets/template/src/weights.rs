@@ -19,6 +19,7 @@
 // *
 // --steps=50
 // --repeat=20
+// --execution=wasm
 // --wasm-execution=compiled
 // --output
 // pallets/template/src/weights.rs
