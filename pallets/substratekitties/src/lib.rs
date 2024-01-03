@@ -95,7 +95,7 @@ pub mod pallet {
 
 	/// [2-data-structure]: Maps the kitty struct to the kitty DNA. (hint: using StorageMap)
 	#[pallet::storage]
-	#[pallet::getter(fn kitty_collection)]
+	#[pallet::getter(fn kitties)]
 	pub type Kitties<T: Config> = StorageMap<_, Twox64Concat, T::Hash, Kitty<T>>;
 
 	/// [2-data-structure]: Track the kitties owned by each account. (hint: using StorageMap)
@@ -111,14 +111,15 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		// A new kitty was successfully created.
 		Created { kitty: T::Hash, owner: T::AccountId },
+
 		// A kitty was successfully transferred.
-		// TODO: Transferred { from: T::AccountId, to: T::AccountId, kitty: [u8; 16] },
+		Transferred { from: T::AccountId, to: T::AccountId, kitty: T::Hash },
 
 		// The price of a kitty was successfully set.
-		// TODO: PriceSet { kitty: [u8; 16], price: Option<BalanceOf<T>> },
+		PriceSet { kitty: T::Hash, price: Option<BalanceOf<T>> },
 
 		// A kitty was successfully sold.
-		// TODO: Sold { seller: T::AccountId, buyer: T::AccountId, kitty: [u8; 16], price: BalanceOf<T> },
+		Sold { seller: T::AccountId, buyer: T::AccountId, kitty: T::Hash, price: BalanceOf<T> },
 	}
 
 	// Errors inform users that something went wrong.
@@ -183,11 +184,19 @@ pub mod pallet {
 		pub fn transfer(
 			origin: OriginFor<T>,
 			to: T::AccountId,
-			kitty_id: [u8; 16],
+			kitty_dna: T::Hash,
 		) -> DispatchResult {
 			// Any account that holds a kitty can send it to another Account. This will reset the
 			// asking price of the kitty, marking it not for sale.
-			todo!("transfer: Invoke to transfer Kitty from extrinsic origin to the destination account");
+			let from = ensure_signed(origin)?;
+
+			let mut kitty = Self::kitties(&kitty_dna).ok_or(Error::<T>::NoKitty)?;
+			// Transfer kitty
+			Pallet::<T>::do_transfer(&mut kitty, from.clone(), to.clone())?;
+
+			Self::deposit_event(Event::Transferred { from, to, kitty: kitty_dna });
+
+			Ok(())
 		}
 
 		/// Set the price for a kitty.
@@ -195,12 +204,22 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::set_price())]
 		pub fn set_price(
 			origin: OriginFor<T>,
-			kitty_id: [u8; 16],
+			kitty_dna: T::Hash,
 			new_price: Option<BalanceOf<T>>,
 		) -> DispatchResult {
-			todo!(
-				"set_price: listing the kitty on the marketplace by setting price so other can buy"
-			);
+			let sender = ensure_signed(origin)?;
+			// 1. check if the kitty exists and is called by the kitty owner
+			let mut kitty = Self::kitties(&kitty_dna).ok_or(Error::<T>::NoKitty)?;
+			ensure!(kitty.owner == sender, Error::<T>::NotOwner);
+
+			// 2. set the price in storage
+			kitty.price = new_price;
+			Kitties::<T>::insert(&kitty_dna, kitty);
+
+			// 3. deposit a "PriceSet" event.
+			Self::deposit_event(Event::PriceSet { kitty: kitty_dna, price: new_price });
+
+			Ok(())
 		}
 
 		/// Buy a saleable kitty. The bid price provided from the buyer has to be equal or higher
@@ -209,10 +228,37 @@ pub mod pallet {
 		#[pallet::weight(T::WeightInfo::buy_kitty())]
 		pub fn buy_kitty(
 			origin: OriginFor<T>,
-			kitty_id: [u8; 16],
+			kitty_dna: T::Hash,
 			bid_price: BalanceOf<T>,
 		) -> DispatchResult {
-			todo!("buy_kitty: Implement a method to buy a kitty from the marketplace.");
+			let mut kitty = Self::kitties(&kitty_dna).ok_or(Error::<T>::NoKitty)?;
+			let (to, from) = (ensure_signed(origin)?, kitty.clone().owner);
+
+			if let Some(price) = kitty.price {
+				ensure!(bid_price >= price, Error::<T>::BidPriceTooLow);
+				// Transfer the amount from buyer to seller
+				T::Currency::transfer(
+					&to,
+					&from,
+					price,
+					frame_support::traits::ExistenceRequirement::KeepAlive,
+				)?;
+
+				// Transfer kitty
+				Pallet::<T>::do_transfer(&mut kitty, from.clone(), to.clone())?;
+
+				// Deposit sold event
+				Self::deposit_event(Event::Sold {
+					seller: from,
+					buyer: to,
+					kitty: kitty_dna,
+					price,
+				});
+			} else {
+				return Err(Error::<T>::NotForSale.into());
+			}
+
+			Ok(())
 		}
 	}
 
@@ -223,6 +269,41 @@ pub mod pallet {
 			let (output, block_number) = T::KittyRandomness::random(&b"dna"[..]);
 			let payload = (output, block_number, minter);
 			T::Hashing::hash_of(&payload)
+		}
+
+		// helper shared method to use for buy_kitty and transfer
+		fn do_transfer(
+			kitty: &mut Kitty<T>,
+			from: T::AccountId,
+			to: T::AccountId,
+		) -> DispatchResult {
+			ensure!(from != to, Error::<T>::TransferToSelf);
+
+			ensure!(kitty.owner == from, Error::<T>::NotOwner);
+
+			// 1. reset the price of a kitty on transferred
+			kitty.price = None;
+			kitty.owner = to.clone();
+			Kitties::<T>::insert(&kitty.dna, kitty.clone());
+
+			// 2. set the new owner for the kitty
+			<KittyOwner<T>>::insert(kitty.dna, Some(&to));
+
+			// 3. push the new kitty DNA to the list of existing kitties owned by a destination account
+			KittiesOwned::<T>::try_append(&to, kitty.dna).map_err(|_| Error::<T>::TooManyOwned)?;
+
+			// 4. update the existing KittiesOwned list of the from account
+			ensure!(from != to, Error::<T>::TransferToSelf);
+			let mut from_owned = KittiesOwned::<T>::get(&from);
+			// Remove kitty from list of owned kitties.
+			if let Some(ind) = from_owned.iter().position(|&id| id == kitty.dna) {
+				from_owned.swap_remove(ind);
+			} else {
+				return Err(Error::<T>::NoKitty.into());
+			}
+			KittiesOwned::<T>::insert(&from, from_owned);
+
+			Ok(())
 		}
 	}
 }

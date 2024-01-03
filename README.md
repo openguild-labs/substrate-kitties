@@ -79,7 +79,7 @@ The full flow for Substrate development will be `Pallet > Runtime > Frontend`
 | #2   | [2-data-structure](https://github.com/lowlevelers/substrate-kitites/tree/2-data-structure)         | Learn about Pallet storage and write basic data structures for Substrate Kitties                |
 | #3   | [3-mint-kitty](https://github.com/lowlevelers/substrate-kitites/tree/3-mint-kitty)                 | Learn about dispatchable functions, event and write a method to mint a new kitty                |
 | #4   | [4-onchain-randomness](https://github.com/lowlevelers/substrate-kitites/tree/4-onchain-randomness) | Learn about onchain randomness and how to generate a random DNA for the Kitty                   |
-| #5   | [5-frontend](https://github.com/lowlevelers/substrate-kitites/tree/5-frontend) | Interact with the Substrate Node from the frontend.                                             |
+| #5   | [5-frontend](https://github.com/lowlevelers/substrate-kitites/tree/5-frontend)                     | Interact with the Substrate Node from the frontend.                                             |
 | #6   | [6-full-code](https://github.com/lowlevelers/substrate-kitites/tree/6-full-code)                   | Implement a full code for Substrate Kitties project                                             |
 
 ---
@@ -598,6 +598,36 @@ const dnaToAttributes = (dna) => {
     mouth: attribute(4, "mouth"),
   };
 };
+```
+
+### Step 6: Full code implementation
+
+Now follow what you learnt, implement the logic for these methods below. Play with it both on Runtime and Frontend so you can understand the flow of Pallet development fully.
+
+```rust
+#[pallet::call_index(1)]
+#[pallet::weight(T::WeightInfo::transfer())]
+pub fn transfer(
+  origin: OriginFor<T>,
+  to: T::AccountId,
+  kitty_dna: T::Hash,
+) -> DispatchResult
+
+#[pallet::call_index(2)]
+#[pallet::weight(T::WeightInfo::set_price())]
+pub fn set_price(
+  origin: OriginFor<T>,
+  kitty_dna: T::Hash,
+  new_price: Option<BalanceOf<T>>,
+) -> DispatchResult
+
+#[pallet::call_index(5)]
+#[pallet::weight(T::WeightInfo::buy_kitty())]
+pub fn buy_kitty(
+  origin: OriginFor<T>,
+  kitty_dna: T::Hash,
+  bid_price: BalanceOf<T>,
+) -> DispatchResult
 ```
 
 ## How to contribute
