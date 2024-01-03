@@ -16,11 +16,314 @@ As such, this material will focus on building the logic of this chain. It won't 
 
 Substrate is built using [Rust][], a modern statically typed systems programming language. We won't go into the details of the language within this workshop. The language is quite easy to read and follow and if you have programmed before, you shouldn't have too much trouble following what is going on and finishing the exercises even if [Rust][] is new to you.
 
-## How do I do this?
+## Tutorial Steps
 
-Just go through the material chapter by chapter, do one exercise at a time. While the material is meant for you to be able to do on your own, we highly recommend you to get together and work on it with others, in learning groups or hosted workshops. It is totally normal to get stuck from time to time or to not understand what the material is attempting to explain. In those situations it helps a lot to have others around to talk to about it and resolve that frustration. That said, we highly appreciate any [feedback regarding the material, and where you might got stuck][feedback].
+### Business logic
+
+We are going to build a simple NFT marketplace for `Substrate Kitties` (Please take a look at CryptoZombies or CryptoKitties on Ethereum blockchain to get an idea of what is Substrate Kitties) that allows users to:
+
+- `mint`: Mint a new NFT item (we call it a Kitty)
+- `transfer`: Transfer a new NFT item from the sender to a destination account.
+- `list_nft`: List the NFT on the marketplace so other users can buy
+- `buy_nft`: User can buy NFT on the marketplace from other users if the NFT is listed
+
+### Prerequisites
+
+This requires you to finish a first few tutorials of Substrate development from the official documentation. If you have not walked through those first. Please take a look at these first before diving deeper into this interactive tutorial:
+
+- [TheLowLevelers - Run a local Substrate Node (Vietnamese)](https://lowlevelers.com/blog/polkadot/polkadot-guide-chay-local-substrate-node)
+- [Substrate Tutorial - Build a local blockchain](https://docs.substrate.io/tutorials/build-a-blockchain/build-local-blockchain/)
+- [Substrate Tutorial - Pallet](https://docs.substrate.io/tutorials/build-application-logic/)
+
+### Step 0: Setup your local environment
+
+If your hardware is a modern M1 Apple sillicon chip, working with Substrate can be very painful because there is many unstable compilation issue happens during your development. To avoid this, please install Rust toolchain following these versions below.
+
+```
+❯ cargo --version
+cargo 1.76.0-nightly (71cd3a926 2023-11-20)
+❯ rustc --version
+rustc 1.76.0-nightly (3a85a5cfe 2023-11-20)
+❯ rustup --version
+rustup 1.25.2 (17db695f1 2023-02-01)
+```
+
+### Step 1: Clone repository + Setup code template on your local
+
+There are multiple version for this awesome Substrate Kitties tutorial. However, based on my experience, those are outdated and it takes you a lot of time to set up a right dependecy version to work on.
+
+So please checkout `1-setup` to get well-tested code template for this tutorial.
+
+```shell
+git clone https://github.com/lowlevelers/substrate-kitites.git
+git checkout 1-setup
+```
+
+After checking the branch, please run below command to test if you can run a node from your local environment.
+
+```
+cd substrate-kitties
+cargo build --release
+```
+
+Let's break down the given template code and what you need to work on:
+
+> I will suppose that you already understand the structure of a Pallet code and how Pallet interacts with the Substrate Runtime
+
+The full flow for Substrate development will be `Pallet > Runtime > Frontend`
+
+| Step | Modules                                                                                            | Description                                                                                     |
+| ---- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| #0   | Prerequisites                                                                                      | Prepare your local environment to work with Substrate node and the code template                |
+| #1   | [1-setup](https://github.com/lowlevelers/substrate-kitites/tree/1-setup)                           | Clone `substrate-kitties` and checkout branch `1-setup` to setup the template code on the local |
+| #2   | [2-data-structure](https://github.com/lowlevelers/substrate-kitites/tree/2-data-structure)         | Learn about Pallet storage and write basic data structures for Substrate Kitties                |
+| #3   | [3-mint-kitty](https://github.com/lowlevelers/substrate-kitites/tree/3-mint-kitty)                 | Learn about dispatchable functions, event and write a method to mint a new kitty                |
+| #4   | [4-onchain-randomness](https://github.com/lowlevelers/substrate-kitites/tree/4-onchain-randomness) | Learn about onchain randomness and how to generate a random DNA for the Kitty                   |
+| #5   | [5-call-from-frontend](https://github.com/lowlevelers/substrate-kitites/tree/5-call-from-frontend) | Interact with the Substrate Node from the frontend.                                             |
+| #6   | [6-full-code](https://github.com/lowlevelers/substrate-kitites/tree/6-full-code)                   | Implement a full code for Substrate Kitties project                                             |
 
 ---
+
+### Step 2: Learn about Pallet storage and write basic data structures
+
+#### Reading Materials
+
+I would recommend you to read these materials below first before looking at the code implmentation of the data structures. These materials below cover very well the concepts of FRAME storage in Substrate development.
+
+- [Polkadot Blockchain Academy - FRAME Storage lecture](https://polkadot-blockchain-academy.github.io/pba-book/frame/storage/page.html)
+- [Substrate Docs - Runtime storage structure](https://docs.substrate.io/build/runtime-storage/)
+
+#### Data structures to work with Storage API
+
+The FRAME Storage module simplifies access to these layered storage abstractions. You can use the FRAME storage data structures to read or write any value that can be encoded by the SCALE codec. The storage module provides the following types of storage structures:
+
+- [**StorageValue**](https://paritytech.github.io/substrate/master/frame_support/storage/trait.StorageValue.html) to store any single value, such as a u64.
+- [**StorageMap**](https://paritytech.github.io/substrate/master/frame_support/storage/trait.StorageMap.html) to store a single key to value mapping, such as a specific account key to a specific balance value.
+- [**StorageDoubleMap**](https://paritytech.github.io/substrate/master/frame_support/storage/trait.StorageDoubleMap.html) to store values in a storage map with two keys as an optimization to efficiently remove all entries that have a common first key.
+- [**StorageNMap**](https://paritytech.github.io/substrate/master/frame_support/storage/trait.StorageNMap.html) to store values in a map with any arbitrary number of keys.
+
+#### Struct data for Kitty
+
+The blow type alias `BalanceOf` llows easy access our Pallet's `Balance` type. Comes from `Currency` interface.
+
+```rust
+type BalanceOf<T> =
+ <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+```
+
+Struct for holding kitty information. You may notice a few macros used for the below struct like `Encode`, `Decode`, `TypeInfo`, `MaxEncodedLen`. Let's break down the use of these macros.
+
+- `Encode`, `Decode`: Macros in `parity-scale-codec` which allows the struct to be serialized to and deserialized from binary format with [SCALE](https://github.com/paritytech/parity-scale-codec).
+- `MaxEncodedLen`: By default the macro will try to bound the types needed to implement `MaxEncodedLen`, but the bounds can be specified manually with the top level attribute.
+- `TypeInfo`: Basically, Rust macros are not that intelligent. In the case of the TypeInfo derive macro, we parse the underlying object, and try to turn it into some JSON expressed type which can be put in the metadata and used by front-ends. (Read more [Substrate Stack Exchange -
+  What is the role of `#[scale_info(skip_type_params(T))]`?](https://substrate.stackexchange.com/questions/1423/what-is-the-role-of-scale-infoskip-type-paramst))
+
+```rust
+#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Copy)]
+#[scale_info(skip_type_params(T))]
+pub struct Kitty<T: Config> {
+ // [2-data-structure]: Implement other attributes for the Kitty struct
+ pub dna: T::Hash,
+ pub price: Option<BalanceOf<T>>,
+ pub gender: Gender,
+ pub owner: T::AccountId,
+}
+```
+
+The Rust macros for automatically deriving MaxEncodedLen naively thinks that T must also be bounded by MaxEncodedLen, even though T itself is not being used in the actual types. ([Read more](https://substrate.stackexchange.com/questions/619/how-to-fix-parity-scale-codecmaxencodedlen-is-not-implemented-for-t/620#620))
+
+Another way to do this without macros like `TypeInfo` and `#[scale_info(skip_type_params(T))]` is to pass in the generic type for `T::AccountId` and `T::Hash` directly instead of pointing them from the genenric `T` type (which does not implement `MaxEncodedLen`).
+
+```rust
+// The Gender type used in the `Kitty` struct
+#[derive(Clone, Encode, Decode, PartialEq, Copy, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+pub enum Gender {
+ Male,
+ Female,
+}
+
+impl<T: Config> Kitty<T> {
+ pub fn generate_gender(random_hash: T::Hash) -> Gender {
+  match random_hash.as_ref()[0] % 2 {
+   0 => Gender::Male,
+   _ => Gender::Female,
+  }
+ }
+
+ fn new(dna: T::Hash, owner: T::AccountId) -> Self {
+  Kitty { dna, gender: Kitty::<T>::generate_gender(dna), owner, price: None }
+ }
+}
+```
+
+In [4-onchain-randomness](https://github.com/lowlevelers/substrate-kitites/tree/4-onchain-randomness) we will cover the Onchain Randomness topic which is used to generate the DNA for the Kitty. Then this DNA is used to generate the gender for the Kitty as well.
+
+One last thing about type object, you may notice there is `MaxKittiesOwned` type declared in the `Config` trait of the `Pallet`. The purpose of this type is to tell the Runtime which bounded value that can be passed in from the Runtime (Learn more from [Substrate Docs - Configure Runtime Constants](https://docs.substrate.io/reference/how-to-guides/basics/configure-runtime-constants/)).
+
+> Question ⁉️: Why don't we store the `MaxKittiesOwned` with `StorageValue`. Because we want to bound the vector of kitties implemented later (below) with a constant which is not declared upfront. `StorageValue` does not allow us to do it so we need to config a constant on the runtime initialized.
+
+```rust
+	#[pallet::config]
+	pub trait Config: frame_system::Config {
+  /// Other type declarations...
+
+		/// [2-data-structure]: The maximum amount of kitties a single account can own.
+		#[pallet::constant]
+		type MaxKittiesOwned: Get<u32>;
+	}
+```
+
+#### Let's implement the storage variables for Substrate Kitties
+
+In the context of Substrate Kitties, we will need data structures that can provide:
+
+1. `Collection of Kitties`: We want a data structure that can helps to get the Kitty complete data by DNA whenever we need. Hence, `StorageMap` is a suitable data structure for this. We don't want to use `StorageValue` with `Vec` because this is expensive when we want to access the Kitty.
+
+> `Twox64Concat` is a hashing technique that is used to hash the keys stored in the `StorageMap`
+
+```rust
+/// [2-data-structure]: Maps the kitty struct to the kitty DNA. (hint: using StorageMap)
+#[pallet::storage]
+#[pallet::getter(fn kitty_collection)]
+pub type Kitties<T: Config> = StorageMap<_, Twox64Concat, T::Hash, Kitty<T>>;
+```
+
+2. `Relationship between Kitty and its Owner`: This is a `one-to-one` relationship that helps to identify who owns that Kitty. In this case, we need `O(1)` data structure that can help to traverse the relationship between `Owner` and `Kitty` quickly. Hence, we can use `StorageMap`.
+
+```rust
+/// [2-data-structure]: Track the kitties owned by each account. (hint: using StorageMap)
+#[pallet::storage]
+#[pallet::getter(fn owner_of)]
+pub(super) type KittyOwner<T: Config> =
+ StorageMap<_, Twox64Concat, T::Hash, Option<T::AccountId>, ValueQuery>;
+```
+
+3. `Relationship between Owner and their Kitties`: This is a `one-to-many` relationship that helps to identify Kitties owned by an Owner. In this case, we need `O(1)` data structure that can help to traverse the relationship between `Owner` and a list of `Kitty` quickly. Hence, we can use `StorageMap` with `BoundedVec` to store list of Kitty DNAs. Remember that any computation and memory space costs money, so we should use `Bounded` storage structure for memory efficiency.
+
+```rust
+/// [2-data-structure]: Keep track of kitties owned by the owner account
+#[pallet::storage]
+pub(super) type KittiesOwned<T: Config> = StorageMap<
+ _,
+ Twox64Concat,
+ T::AccountId,
+ BoundedVec<[u8; 16], T::MaxKittiesOwned>,
+ ValueQuery,
+>;
+```
+
+4. `Total number of Kitties minted`: We want to track the number of Kitties minted through our blockchain.
+
+```rust
+/// [2-data-structure]: Keeps track of the number of kitties in existence. (hint: using StorageValue)
+#[pallet::storage]
+#[pallet::getter(fn all_kitties_count)]
+pub(super) type AllKittiesCount<T: Config> = StorageValue<_, u64, ValueQuery>;
+```
+
+### Step 3: Learn about dispatchable functions, event and write a method to mint a new kitty
+
+#### Dispatchable functions
+
+- [TheLowLevelers - What is Pallet? (Vietnamese)](https://lowlevelers.com/blog/polkadot/code-breakdown-pallet-template)
+- [Substrate Docs - Specify the origin for a call](https://docs.substrate.io/tutorials/build-application-logic/specify-the-origin-for-a-call/)
+
+When users interact with a blockchain they call dispatchable functions to do something. Because those functions are called from the outside of the blockchain interface, in Polkadot's terms any action that involves a dispatchable function is an **Extrinsic**.
+
+```rust
+#[pallet::call_index(0)]
+#[pallet::weight(T::WeightInfo::dispatchable_function_name())]
+pub fn dispatchable_function_name(origin: OriginFor<T>) -> DispatchResult
+```
+
+A function signature of a dispatchable function declared in the Pallet code must return a `DispatchResult` and accept a first parameter is an origin typed `OriginFor<T>`.
+
+#### Events & Errors
+
+Events and errors are used to notify about specific activity. Please use this for debugging purpose only. Events and Errors should not be used as a communication method between functionalities.
+
+In our codebase, we will declare these errors and events. The syntax is basically Rust code but with macro `#[pallet::error]`
+
+```rust
+// Errors inform users that something went wrong.
+#[pallet::error]
+pub enum Error<T> {
+ /// An account may only own `MaxKittiesOwned` kitties.
+ TooManyOwned,
+ /// This kitty already exists!
+ DuplicateKitty,
+ /// An overflow has occurred!
+ Overflow,
+ /// This kitty does not exist!
+ NoKitty,
+ /// You are not the owner of this kitty.
+ NotOwner,
+ /// Trying to transfer or buy a kitty from oneself.
+ TransferToSelf,
+ /// Ensures that the buying price is greater than the asking price.
+ BidPriceTooLow,
+ /// This kitty is not for sale.
+ NotForSale,
+}
+```
+
+And comment out the `Created` event so that we can deposit an event on new kitty minted.
+
+```rust
+#[pallet::event]
+#[pallet::generate_deposit(pub(super) fn deposit_event)]
+pub enum Event<T: Config> {
+ // A new kitty was successfully created.
+ Created { kitty: T::Hash, owner: T::AccountId },
+}
+```
+
+To dispatch an event, we do
+
+```rust
+// deposit a new event when the kitty is created
+Self::deposit_event(Event::Created { kitty: kitty_dna, owner: sender });
+```
+
+#### Write a method to mint a new kitty
+
+```rust
+/// Create a new unique kitty.
+#[pallet::call_index(0)]
+#[pallet::weight(T::WeightInfo::create_kitty())]
+pub fn create_kitty(origin: OriginFor<T>) -> DispatchResult {
+ // Ensure that sender did sign this extrinsic call
+ let sender = ensure_signed(origin)?;
+
+ // Generate a randome DNA (this will be guided in 4-onchain-randomness)
+ let kitty_dna = Pallet::<T>::gen_dna(&sender);
+ ensure!(!<Kitties<T>>::contains_key(kitty_dna), Error::<T>::DuplicateKitty);
+
+ // 1. map the new DNA with the struct data of Kitty
+ // ERROR: We throw an error if there exists a Kitty already
+ <Kitties<T>>::insert(kitty_dna, Kitty::<T>::new(kitty_dna, sender.clone()));
+
+ // 2. map the new DNA with its new owner
+ // ERROR: We throw an error if there exists a Kitty already
+ ensure!(!<KittyOwner<T>>::contains_key(kitty_dna), Error::<T>::DuplicateKitty);
+ <KittyOwner<T>>::insert(kitty_dna, Some(&sender));
+
+ // 3. update the total count of kitties
+ let new_all_kitties_count =
+  Self::all_kitties_count().checked_add(1).ok_or(Error::<T>::Overflow).unwrap();
+ <AllKittiesCount<T>>::put(new_all_kitties_count);
+
+ // 4. push the new kitty DNA to the list of existing kitties owned by a sender
+ KittiesOwned::<T>::try_append(&sender, kitty_dna)
+  // ERROR: We throw an error if there are too many Kitties owned by the sender
+  .map_err(|_| Error::<T>::TooManyOwned)?;
+
+ // EVENT: Deposit a new event when the kitty is created
+ Self::deposit_event(Event::Created { kitty: kitty_dna, owner: sender });
+
+ Ok(())
+}
+```
 
 ## How to contribute
 
