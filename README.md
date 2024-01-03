@@ -452,6 +452,152 @@ fn gen_dna(minter: &T::AccountId) -> T::Hash {
 }
 ```
 
+### Step 5: Interact with the Substrate Node from the frontend.
+
+That's enough for the Substrate part, now we have an API for `create_kitty` ready, let's implement a frontend to interact with the logic defined in our Pallet code. Before starting the frontend, please follow these steps:
+
+> Frontend code implementation is complete already. Please follow the blog or clone `substrate-frontend-template` to work from scratch
+
+```
+cd frontend
+npm run install
+```
+
+There are many abstractions on the frontend side as it uses multiple open-source libraries like `@polkadot/api`. I will keep it in a decent level of abstraction so you can still understand how does it work.
+
+> You are supposed to have a decent knowledge of React and Javascript to grasp the idea of this tutorial step. Because we mainly use RPC methods from `@polkadot/api`, having a prior knowledge of frontend development is a must.
+
+Let's break down API call to the Substrate Node. On the frontend code, you can log out the methods by doing
+
+```js
+// Kitties.js
+console.log(api.query.kitties);
+```
+
+Simply speaking, this API call abstract a way RPC call to the storage getter.
+
+```js
+// Example of the code to fetch all Kitties
+const asyncFetch = async () => {
+  unsub = await api.query.kitties.allKittiesCount(async (count) => {
+    // Fetch all kitty keys
+    const entries = await api.query.kitties.kitties.entries();
+    const kittiesMap = entries.map((entry) => {
+      return {
+        id: toHexString(entry[0].slice(-32)),
+        ...parseKitty(entry[1].unwrap()),
+      };
+    });
+    setKitties(kittiesMap);
+  });
+};
+```
+
+How about dispatching an extrinsic call to the Subtrate node backend? Please a full view of the `TxButton.js` file to get the overall idea.
+
+```js
+api.tx[palletRpc][callable];
+```
+
+This is what you actually see in that code file, in `Kitties.js`
+
+```js
+<TxButton
+  label="Create Kitty"
+  type="SIGNED-TX"
+  setStatus={setStatus}
+  attrs={{
+    palletRpc: "kitties",
+    callable: "createKitty",
+    inputParams: [],
+    paramFields: [],
+  }}
+/>
+```
+
+What it actually looks like is
+
+```js
+api.tx.kitties.createKitty(...params);
+```
+
+Reflect this with what we did on the Substrate backend
+
+```rust
+// runtime/lib.rs
+construct_runtime!(
+	pub struct Runtime
+	where
+		Block = Block,
+		NodeBlock = opaque::Block,
+		UncheckedExtrinsic = UncheckedExtrinsic,
+	{
+    // ...other pallet declaration
+		Kitties: pallet_substratekitties,
+	}
+);
+
+// substratekitties/lib.rs
+#[pallet::call_index(0)]
+#[pallet::weight(T::WeightInfo::create_kitty())]
+pub fn create_kitty(origin: OriginFor<T>) -> DispatchResult
+```
+
+So it would be `Kitties.create_kitty` which is converted to the frontend code after deserializing is `api.tx.kitties.createKitty`.
+
+That's it, it is quite simple about how to interact with your Pallet code right? Polkadot team definitely has many good engineers. There are a few other things like "How to get account in the network and its balance?"
+
+```javascript
+function BalanceAnnotation(props) {
+  const { api, currentAccount } = useSubstrateState();
+  const [accountBalance, setAccountBalance] = useState(0);
+
+  // When account address changes, update subscriptions
+  useEffect(() => {
+    let unsubscribe;
+
+    // If the user has selected an address, create a new subscription
+    currentAccount &&
+      api.query.system
+        .account(acctAddr(currentAccount), (balance) =>
+          setAccountBalance(balance.data.free.toHuman())
+        )
+        .then((unsub) => (unsubscribe = unsub))
+        .catch(console.error);
+
+    return () => unsubscribe && unsubscribe();
+  }, [api, currentAccount]);
+
+  return currentAccount ? (
+    <Label pointing="left">
+      <Icon name="money" color="green" />
+      {accountBalance}
+    </Label>
+  ) : null;
+}
+```
+
+It simply get the data from the `System` pallet about the accounts on the existing blockchain and their balances.
+
+I guess that's enough for the overall idea of the frontend code. After retrieving the data from the Substrate node, the part of visualizing it is your thing.
+
+Also, I might miss this. If you are interested into how the unique Kitty image is generated, please take a look at `KittyAvatar.js`.
+
+```javascript
+const dnaToAttributes = (dna) => {
+  const attribute = (index, type) =>
+    IMAGES[type][dna[index] % IMAGES[type].length];
+
+  return {
+    body: attribute(0, "body"),
+    eyes: attribute(1, "eyes"),
+    accessory: attribute(2, "accessory"),
+    fur: attribute(3, "fur"),
+    mouth: attribute(4, "mouth"),
+  };
+};
+```
+
 ## How to contribute
 
 Before committing to the tasks in the community, please skim through the guidelines below to grasp the overall idea of how the community works first. It does not take long but I believe it will give you a big picture of the vision and culture of TheLowLevelers.
