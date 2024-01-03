@@ -73,7 +73,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxKittiesOwned: Get<u32>;
 
-		/// TODO: The type of Randomness we want to specify for this pallet.
+		/// [4-onchain-randomness]: The type of Randomness we want to specify for this pallet.
 		type KittyRandomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
 	}
 

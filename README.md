@@ -325,6 +325,133 @@ pub fn create_kitty(origin: OriginFor<T>) -> DispatchResult {
 }
 ```
 
+### Step 4: Learn about onchain randomness and how to generate a random DNA for the Kitty
+
+- [Substrate Docs - Randomness](https://docs.substrate.io/build/randomness/)
+- [Substrate How-to Guides - Incorporate Randomness](https://docs.substrate.io/reference/how-to-guides/pallet-design/incorporate-randomness/)
+- [Substrate Stack Exchange - Onchain Pseudo Random Numbers Agreed by All](https://substrate.stackexchange.com/questions/346/on-chain-pseudo-random-numbers-agreed-by-all)
+
+Onchain randomness is quite important for a Turing complete applications. There are many use cases involved the randomness like gambling, probabilistic computation or random factors in gaming. But in blockchain, state in the state machine must be deterministic so we don't have a real randomness but `pseudo randomness`.
+
+To add randomness feature to our Kitty DNA generation logic, we will use `pallet_insecure_randomness_collective_flip` pallet. This Pallet is not supposed to be used on `production` so please be aware of it.
+
+#### Logic behinds [`pallet_insecure_randomnes_collective_flip`](https://docs.rs/pallet-randomness-collective-flip/latest/src/pallet_randomness_collective_flip/lib.rs.html#18-308)
+
+The logic behinds this Pallet crate is simple. It has an offchain worker running to store a block hash to the onchain storage when block is initialized.
+
+```rust
+#[pallet::hooks]
+impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+  fn on_initialize(block_number: T::BlockNumber) -> Weight {
+    // take the parent hash of the block (block hash of the previous block)
+    let parent_hash = <frame_system::Pallet<T>>::parent_hash();
+
+    // store into the onchain storage
+    <RandomMaterial<T>>::mutate(|ref mut values| {
+      if values.try_push(parent_hash).is_err() {
+        let index = block_number_to_index::<T>(block_number);
+        values[index] = parent_hash;
+      }
+    });
+
+    T::DbWeight::get().reads_writes(1, 1)
+  }
+}
+```
+
+After 81 block hashes, it takes all thoses and generate a random value based on it. In the Pallet source code, you can see it defines this constant value for the number of random materials.
+
+```rust
+const RANDOM_MATERIAL_LEN: u32 = 81;
+```
+
+Take a look at the seed generation code
+
+```rust
+let hash_series = <RandomMaterial<T>>::get();
+let seed = if !hash_series.is_empty() {
+  // Always the case after block 1 is initialized.
+  hash_series
+    .iter()
+    .cycle()
+    .skip(index)
+    .take(RANDOM_MATERIAL_LEN as usize)
+    .enumerate()
+    .map(|(i, h)| (i as i8, subject, h).using_encoded(T::Hashing::hash))
+    .triplet_mix()
+} else {
+  T::Hash::default()
+};
+```
+
+As you see, it is quite straightforward and simple to understand. This randomness can be predicted in advanced but still random enough to not be predicted.
+
+#### Generate random DNA for the Kitty
+
+Ok so now how can we implement this randomness feature for our Kitty DNA generation code?
+
+We will add the below `KittyRandomness` type metadata into the `Config` trait of the pallet. Hence, on the `Runtime` side, we can add a Pallet that matches the type.
+
+```rust
+/// [4-onchain-randomness]: The type of Randomness we want to specify for this pallet.
+type KittyRandomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
+```
+
+On `Runtime` side, we add the `pallet_insecure_randomness_collective_flip` crate to the dependency list.
+
+```rust
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/substrate", package = "pallet-insecure-randomness-collective-flip", default-features = false, branch = "polkadot-v0.9.42" }
+```
+
+With this, we can define the Pallet on the `Runtime` side. Inside `construct_runtime!` macro, we add `RandomnessCollectiveFlip`.
+
+```rust
+construct_runtime!(
+	pub struct Runtime
+	where
+		Block = Block,
+		NodeBlock = opaque::Block,
+		UncheckedExtrinsic = UncheckedExtrinsic,
+	{
+        /** Other pallet declarations **/
+		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip, // Newly added randomness pallet
+		Kitties: pallet_substratekitties, // Our Kitties pallet
+	}
+);
+
+/** Other code... */
+```
+
+We need to make changes to the Pallet Kitties config code. It simply plugs and play.
+
+```diff
++ impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
+
+impl pallet_substratekitties::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_substratekitties::weights::SubstrateWeight<Runtime>;
+	type Currency = Balances;
+	type MaxKittiesOwned = frame_support::pallet_prelude::ConstU32<100>;
++   type KittyRandomness = RandomnessCollectiveFlip;
+}
+```
+
+To check if Runtime code is functional, please run `cargo check`.
+
+> Actually, I already add all these Randomness stuff in the `1-setup` but feel free to reimplement the feature yourself so you can fully grasp the idea of this tutorial
+
+Now we are ready to generate DNA for our Kitty
+
+```rust
+// [4-onchain-randomness] Generates and returns DNA and Gender
+fn gen_dna(minter: &T::AccountId) -> T::Hash {
+  let (output, block_number) = T::KittyRandomness::random(&b"dna"[..]);
+  // Experiment: You can experiment your self to have only block_number and minter as a parameters of the hashing function. This can be generated if you mint a new Kitty in different blocks. Otherwise, it will be double spending
+  let payload = (output, block_number, minter);
+  T::Hashing::hash_of(&payload)
+}
+```
+
 ## How to contribute
 
 Before committing to the tasks in the community, please skim through the guidelines below to grasp the overall idea of how the community works first. It does not take long but I believe it will give you a big picture of the vision and culture of TheLowLevelers.
