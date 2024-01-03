@@ -79,7 +79,7 @@ The full flow for Substrate development will be `Pallet > Runtime > Frontend`
 | #2   | [2-data-structure](https://github.com/lowlevelers/substrate-kitites/tree/2-data-structure)         | Learn about Pallet storage and write basic data structures for Substrate Kitties                |
 | #3   | [3-mint-kitty](https://github.com/lowlevelers/substrate-kitites/tree/3-mint-kitty)                 | Learn about dispatchable functions, event and write a method to mint a new kitty                |
 | #4   | [4-onchain-randomness](https://github.com/lowlevelers/substrate-kitites/tree/4-onchain-randomness) | Learn about onchain randomness and how to generate a random DNA for the Kitty                   |
-| #5   | [5-call-from-frontend](https://github.com/lowlevelers/substrate-kitites/tree/5-call-from-frontend) | Interact with the Substrate Node from the frontend.                                             |
+| #5   | [5-frontend](https://github.com/lowlevelers/substrate-kitites/tree/5-frontend) | Interact with the Substrate Node from the frontend.                                             |
 | #6   | [6-full-code](https://github.com/lowlevelers/substrate-kitites/tree/6-full-code)                   | Implement a full code for Substrate Kitties project                                             |
 
 ---
