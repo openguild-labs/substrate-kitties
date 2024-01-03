@@ -214,6 +214,13 @@ pub(super) type KittiesOwned<T: Config> = StorageMap<
 
 4. `Total number of Kitties minted`: We want to track the number of Kitties minted through our blockchain.
 
+```rust
+/// [2-data-structure]: Keeps track of the number of kitties in existence. (hint: using StorageValue)
+#[pallet::storage]
+#[pallet::getter(fn all_kitties_count)]
+pub(super) type AllKittiesCount<T: Config> = StorageValue<_, u64, ValueQuery>;
+```
+
 ## How to contribute
 
 Before committing to the tasks in the community, please skim through the guidelines below to grasp the overall idea of how the community works first. It does not take long but I believe it will give you a big picture of the vision and culture of TheLowLevelers.
