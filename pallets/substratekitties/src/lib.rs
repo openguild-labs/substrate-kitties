@@ -35,8 +35,24 @@ pub mod pallet {
 	#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Copy)]
 	#[scale_info(skip_type_params(T))]
 	pub struct Kitty<T: Config> {
-		// TODO: Implement other attributes for the Kitty struct
+		// [2-data-structure]: Implement other attributes for the Kitty struct
+		pub dna: T::Hash,
+		pub price: Option<BalanceOf<T>>,
+		pub gender: Gender,
 		pub owner: T::AccountId,
+	}
+
+	impl<T: Config> Kitty<T> {
+		pub fn generate_gender(random_hash: T::Hash) -> Gender {
+			match random_hash.as_ref()[0] % 2 {
+				0 => Gender::Male,
+				_ => Gender::Female,
+			}
+		}
+
+		fn new(dna: T::Hash, owner: T::AccountId) -> Self {
+			Kitty { dna, gender: Kitty::<T>::generate_gender(dna), owner, price: None }
+		}
 	}
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -51,7 +67,7 @@ pub mod pallet {
 		/// The Currency handler for the kitties pallet.
 		type Currency: Currency<Self::AccountId>;
 
-		/// TODO: The maximum amount of kitties a single account can own.
+		/// [2-data-structure]: The maximum amount of kitties a single account can own.
 		#[pallet::constant]
 		type MaxKittiesOwned: Get<u32>;
 
@@ -59,11 +75,31 @@ pub mod pallet {
 		type KittyRandomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
 	}
 
-	/// TODO: Keeps track of the number of kitties in existence. (hint: using StorageValue)
+	/// [2-data-structure]: Keeps track of the number of kitties in existence. (hint: using StorageValue)
+	#[pallet::storage]
+	#[pallet::getter(fn all_kitties_count)]
+	pub(super) type AllKittiesCount<T: Config> = StorageValue<_, u64, ValueQuery>;
 
-	/// TODO: Maps the kitty struct to the kitty DNA. (hint: using StorageMap)
+	/// [2-data-structure]: Keep track of kitties owned by the owner account
+	#[pallet::storage]
+	pub(super) type KittiesOwned<T: Config> = StorageMap<
+		_,
+		Twox64Concat,
+		T::AccountId,
+		BoundedVec<[u8; 16], T::MaxKittiesOwned>,
+		ValueQuery,
+	>;
 
-	/// TODO: Track the kitties owned by each account. (hint: using StorageMap)
+	/// [2-data-structure]: Maps the kitty struct to the kitty DNA. (hint: using StorageMap)
+	#[pallet::storage]
+	#[pallet::getter(fn kitty_collection)]
+	pub type Kitties<T: Config> = StorageMap<_, Twox64Concat, T::Hash, Kitty<T>>;
+
+	/// [2-data-structure]: Track the kitties owned by each account. (hint: using StorageMap)
+	#[pallet::storage]
+	#[pallet::getter(fn owner_of)]
+	pub(super) type KittyOwner<T: Config> =
+		StorageMap<_, Twox64Concat, T::Hash, Option<T::AccountId>, ValueQuery>;
 
 	// Pallets use events to inform users when important changes are made.
 	// https://docs.substrate.io/main-docs/build/events-errors/
