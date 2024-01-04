@@ -1,6 +1,8 @@
 # Substrate Kitties by TheLowLevelers
 
-Original version from Substrate Developer Hub is here, please give it a few credits to the team behinds it: https://www.shawntabrizi.com/substrate-collectables-workshop/#/
+![Group 160](https://github.com/lowlevelers/substrate-kitties/assets/56880684/9d7f9f2a-cc2a-470a-a93e-b0c5bb63c4a7)
+
+The original version from Substrate Developer Hub is here, please give it a few credits to the team behinds it: https://www.shawntabrizi.com/substrate-collectables-workshop/#/
 
 > The interactive hands-on build-your-first-blockchain with [Substrate][] workshop
 
