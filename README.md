@@ -74,19 +74,21 @@ Let's break down the given template code and what you need to work on:
 
 The full flow for Substrate development will be `Pallet > Runtime > Frontend`
 
-| Step | Modules                                                                                            | Description                                                                                     |
-| ---- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| #0   | Prerequisites                                                                                      | Prepare your local environment to work with Substrate node and the code template                |
-| #1   | [1-setup](https://github.com/lowlevelers/substrate-kitites/tree/1-setup)                           | Clone `substrate-kitties` and checkout branch `1-setup` to setup the template code on the local |
-| #2   | [2-data-structure](https://github.com/lowlevelers/substrate-kitites/tree/2-data-structure)         | Learn about Pallet storage and write basic data structures for Substrate Kitties                |
-| #3   | [3-mint-kitty](https://github.com/lowlevelers/substrate-kitites/tree/3-mint-kitty)                 | Learn about dispatchable functions, event and write a method to mint a new kitty                |
-| #4   | [4-onchain-randomness](https://github.com/lowlevelers/substrate-kitites/tree/4-onchain-randomness) | Learn about onchain randomness and how to generate a random DNA for the Kitty                   |
-| #5   | [5-frontend](https://github.com/lowlevelers/substrate-kitites/tree/5-frontend)                     | Interact with the Substrate Node from the frontend.                                             |
-| #6   | [6-full-code](https://github.com/lowlevelers/substrate-kitites/tree/6-full-code)                   | Implement a full code for Substrate Kitties project                                             |
-| #7 | [7-nft-pallet](https://github.com/lowlevelers/substrate-kitties/tree/7-nft-pallet)                   | Migrate to production-ready `pallet-nft` |
-| #8 | [8-nft-auction](https://github.com/lowlevelers/substrate-kitties/tree/8-nft-auction)   | Build NFT Auction for Substrate Kitties NFT |
-| #9 | [9-soulbound-nft](https://github.com/lowlevelers/substrate-kitties/tree/9-soulbound-nft) | Implement non-transferrable attribute to the Substrate Kitties NFT |
+| Step | Status | Modules                                                                                            | Description                                                                                     |
+| ---- | ---- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| #0  | ✅  | Prerequisites                                                                                      | Prepare your local environment to work with Substrate node and the code template                |
+| #1  | ✅ | [1-setup](https://github.com/lowlevelers/substrate-kitites/tree/1-setup)                           | Clone `substrate-kitties` and checkout branch `1-setup` to setup the template code on the local |
+| #2  | ✅ | [2-data-structure](https://github.com/lowlevelers/substrate-kitites/tree/2-data-structure)         | Learn about Pallet storage and write basic data structures for Substrate Kitties                |
+| #3  | ✅ | [3-mint-kitty](https://github.com/lowlevelers/substrate-kitites/tree/3-mint-kitty)                 | Learn about dispatchable functions, event and write a method to mint a new kitty                |
+| #4  | ✅ | [4-onchain-randomness](https://github.com/lowlevelers/substrate-kitites/tree/4-onchain-randomness) | Learn about onchain randomness and how to generate a random DNA for the Kitty                   |
+| #5  | ✅ | [5-frontend](https://github.com/lowlevelers/substrate-kitites/tree/5-frontend)                     | Interact with the Substrate Node from the frontend.                                             |
+| #6  | ✅ | [6-full-code](https://github.com/lowlevelers/substrate-kitites/tree/6-full-code)                   | Implement a full code for Substrate Kitties project                                             |
+| #7 | ✅ | [7-nft-pallet](https://github.com/lowlevelers/substrate-kitties/tree/7-nft-pallet)                   | Migrate to production-ready `pallet-nft` |
+| #8 | 🟡 | [8-nft-auction](https://github.com/lowlevelers/substrate-kitties/tree/8-nft-auction)   | Build NFT Auction for Substrate Kitties NFT |
+| #9 | 🟡 | [9-soulbound-nft](https://github.com/lowlevelers/substrate-kitties/tree/9-soulbound-nft) | Implement non-transferrable attribute to the Substrate Kitties NFT |
 
+✅ stands for `Finished` 
+🟡 stands for `In Progress`
 ---
 
 ### Step 2: Learn about Pallet storage and write basic data structures
