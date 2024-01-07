@@ -2,19 +2,19 @@
 
 ![Group 160](https://github.com/lowlevelers/substrate-kitties/assets/56880684/9d7f9f2a-cc2a-470a-a93e-b0c5bb63c4a7)
 
-The original version from Substrate Developer Hub is here, please give it a few credits to the team behinds it: https://www.shawntabrizi.com/substrate-collectables-workshop/#/
+The original version from Substrate Developer Hub is here, please give a few credits to the team behind it: https://www.shawntabrizi.com/substrate-collectables-workshop/#/
 
 > The interactive hands-on build-your-first-blockchain with [Substrate][] workshop
 
 ## 🖐️ What is this version made by TheLowLevelers?
 
-The original version is outdated. `substrate-node-template` no longer has a concept of runtime modules but `pallet`. Hence, it is not likable to us the outdated material to learn about Substrate.
+The original version is outdated. `substrate-node-template` no longer has a concept of runtime modules but `pallet`. Hence, it is not preferable to us outdated material to learn about Substrate.
 
 ## What is this?
 
-This is an interactive hands-on self-paced workshop. You will learn how to build your first blockchain using [Substrate][], the OpenSource [Rust][] Blockchain Development Kit by [Parity][]. Through the lessons of the workshop, you will build a collectables blockchain -- a chain that creates assets, and allows you to interact with and managing ownership of them.
+This is an interactive hands-on self-paced workshop. You will learn how to build your first blockchain using [Substrate][], the OpenSource [Rust][] Blockchain Development Kit by [Parity][]. Through the lessons of the workshop, you will build a collectibles blockchain -- a chain that creates assets and allows you to interact with and manage ownership of them.
 
-As such, this material will focus on building the logic of this chain. It won't cover the networking, consensus or economic incentive aspects of blockchains. Fortunately, Substrate comes with decent networking and consensus engines built in, so we can just focus on the chain logic.
+As such, this material will focus on building the logic of this chain. It won't cover the networking, consensus, or economic incentive aspects of blockchains. Fortunately, Substrate comes with decent networking and consensus engines built in, so we can just focus on the chain logic.
 
 Substrate is built using [Rust][], a modern statically typed systems programming language. We won't go into the details of the language within this workshop. The language is quite easy to read and follow and if you have programmed before, you shouldn't have too much trouble following what is going on and finishing the exercises even if [Rust][] is new to you.
 
@@ -22,7 +22,7 @@ Substrate is built using [Rust][], a modern statically typed systems programming
 
 ### Business logic
 
-We are going to build a simple NFT marketplace for `Substrate Kitties` (Please take a look at CryptoZombies or CryptoKitties on Ethereum blockchain to get an idea of what is Substrate Kitties) that allows users to:
+We are going to build a simple NFT marketplace for `Substrate Kitties` (Please take a look at CryptoZombies or CryptoKitties on the Ethereum blockchain to get an idea of what is Substrate Kitties) that allows users to:
 
 - `mint`: Mint a new NFT item (we call it a Kitty)
 - `transfer`: Transfer a new NFT item from the sender to a destination account.
@@ -31,7 +31,7 @@ We are going to build a simple NFT marketplace for `Substrate Kitties` (Please t
 
 ### Prerequisites
 
-This requires you to finish a first few tutorials of Substrate development from the official documentation. If you have not walked through those first. Please take a look at these first before diving deeper into this interactive tutorial:
+This requires you to finish the first few tutorials of Substrate development from the official documentation. If you have not walked through those first. Please take a look at these first before diving deeper into this interactive tutorial:
 
 - [TheLowLevelers - Run a local Substrate Node (Vietnamese)](https://lowlevelers.com/blog/polkadot/polkadot-guide-chay-local-substrate-node)
 - [Substrate Tutorial - Build a local blockchain](https://docs.substrate.io/tutorials/build-a-blockchain/build-local-blockchain/)
@@ -39,7 +39,7 @@ This requires you to finish a first few tutorials of Substrate development from 
 
 ### Step 0: Setup your local environment
 
-If your hardware is a modern M1 Apple sillicon chip, working with Substrate can be very painful because there is many unstable compilation issue happens during your development. To avoid this, please install Rust toolchain following these versions below.
+If your hardware is a modern M1 Apple silicon chip, working with Substrate can be very painful because there is many unstable compilation issue happens during your development. To avoid this, please install the Rust toolchain following the versions below.
 
 ```
 ❯ cargo --version
@@ -52,16 +52,16 @@ rustup 1.25.2 (17db695f1 2023-02-01)
 
 ### Step 1: Clone repository + Setup code template on your local
 
-There are multiple version for this awesome Substrate Kitties tutorial. However, based on my experience, those are outdated and it takes you a lot of time to set up a right dependecy version to work on.
+There are multiple versions of this awesome Substrate Kitties tutorial. However, based on my experience, those are outdated and it takes you a lot of time to set up the right dependency version to work on.
 
-So please checkout `1-setup` to get well-tested code template for this tutorial.
+So please checkout `1-setup` to get a well-tested code template for this tutorial.
 
 ```shell
 git clone https://github.com/lowlevelers/substrate-kitites.git
 git checkout 1-setup
 ```
 
-After checking the branch, please run below command to test if you can run a node from your local environment.
+After checking the branch, please run the below command to test if you can run a node from your local environment.
 
 ```
 cd substrate-kitties
@@ -83,6 +83,9 @@ The full flow for Substrate development will be `Pallet > Runtime > Frontend`
 | #4   | [4-onchain-randomness](https://github.com/lowlevelers/substrate-kitites/tree/4-onchain-randomness) | Learn about onchain randomness and how to generate a random DNA for the Kitty                   |
 | #5   | [5-frontend](https://github.com/lowlevelers/substrate-kitites/tree/5-frontend)                     | Interact with the Substrate Node from the frontend.                                             |
 | #6   | [6-full-code](https://github.com/lowlevelers/substrate-kitites/tree/6-full-code)                   | Implement a full code for Substrate Kitties project                                             |
+| #7 | [7-nft-pallet](https://github.com/lowlevelers/substrate-kitties/tree/7-nft-pallet)                   | Migrate to production-ready `pallet-nft` |
+| #8 | [8-nft-auction](https://github.com/lowlevelers/substrate-kitties/tree/8-nft-auction)   | Build NFT Auction for Substrate Kitties NFT |
+| #9 | [9-soulbound-nft](https://github.com/lowlevelers/substrate-kitties/tree/9-soulbound-nft) | Implement non-transferrable attribute to the Substrate Kitties NFT |
 
 ---
 
@@ -158,11 +161,11 @@ impl<T: Config> Kitty<T> {
 }
 ```
 
-In [4-onchain-randomness](https://github.com/lowlevelers/substrate-kitites/tree/4-onchain-randomness) we will cover the Onchain Randomness topic which is used to generate the DNA for the Kitty. Then this DNA is used to generate the gender for the Kitty as well.
+In [4-onchain-randomness](https://github.com/lowlevelers/substrate-kitites/tree/4-onchain-randomness) we will cover the Onchain Randomness topic which is used to generate the DNA for the Kitty. Then this DNA is used to generate the gender of the Kitty as well.
 
-One last thing about type object, you may notice there is `MaxKittiesOwned` type declared in the `Config` trait of the `Pallet`. The purpose of this type is to tell the Runtime which bounded value that can be passed in from the Runtime (Learn more from [Substrate Docs - Configure Runtime Constants](https://docs.substrate.io/reference/how-to-guides/basics/configure-runtime-constants/)).
+One last thing about the type object, you may notice there is `MaxKittiesOwned` type declared in the `Config` trait of the `Pallet`. The purpose of this type is to tell the Runtime which bounded value can be passed in from the Runtime (Learn more from [Substrate Docs - Configure Runtime Constants](https://docs.substrate.io/reference/how-to-guides/basics/configure-runtime-constants/)).
 
-> Question ⁉️: Why don't we store the `MaxKittiesOwned` with `StorageValue`. Because we want to bound the vector of kitties implemented later (below) with a constant which is not declared upfront. `StorageValue` does not allow us to do it so we need to config a constant on the runtime initialized.
+> Question ⁉️: Why don't we store the `MaxKittiesOwned` with `StorageValue`? Because we want to add boundary to the vector of kitties implemented later (below) with a constant which is not declared upfront. `StorageValue` does not allow us to do it so we need to configure a constant on the runtime initialized.
 
 ```rust
 	#[pallet::config]
@@ -200,7 +203,7 @@ pub(super) type KittyOwner<T: Config> =
  StorageMap<_, Twox64Concat, T::Hash, Option<T::AccountId>, ValueQuery>;
 ```
 
-3. `Relationship between Owner and their Kitties`: This is a `one-to-many` relationship that helps to identify Kitties owned by an Owner. In this case, we need `O(1)` data structure that can help to traverse the relationship between `Owner` and a list of `Kitty` quickly. Hence, we can use `StorageMap` with `BoundedVec` to store list of Kitty DNAs. Remember that any computation and memory space costs money, so we should use `Bounded` storage structure for memory efficiency.
+3. `Relationship between Owner and their Kitties`: This is a `one-to-many` relationship that helps to identify Kitties owned by an Owner. In this case, we need `O(1)` data structure that can help to traverse the relationship between `Owner` and a list of `Kitty` quickly. Hence, we can use `StorageMap` with `BoundedVec` to store a list of Kitty DNAs. Remember that any computation and memory space costs money, so we should use `Bounded` storage structure for memory efficiency.
 
 ```rust
 /// [2-data-structure]: Keep track of kitties owned by the owner account
@@ -223,7 +226,7 @@ pub(super) type KittiesOwned<T: Config> = StorageMap<
 pub(super) type AllKittiesCount<T: Config> = StorageValue<_, u64, ValueQuery>;
 ```
 
-### Step 3: Learn about dispatchable functions, event and write a method to mint a new kitty
+### Step 3: Learn about dispatchable functions, events and write a method to mint a new kitty
 
 #### Dispatchable functions
 
@@ -604,7 +607,7 @@ const dnaToAttributes = (dna) => {
 
 ### Step 6: Full code implementation
 
-Now follow what you learnt, implement the logic for these methods below. Play with it both on Runtime and Frontend so you can understand the flow of Pallet development fully.
+Now follow what you learnt, and implement the logic for these methods below. Play with it both on Runtime and Frontend so you can understand the flow of Pallet development fully.
 
 ```rust
 #[pallet::call_index(1)]
@@ -631,6 +634,8 @@ pub fn buy_kitty(
   bid_price: BalanceOf<T>,
 ) -> DispatchResult
 ```
+
+### Step 7: Migrate to production-ready `pallet-nft`
 
 ## How to contribute
 
