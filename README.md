@@ -83,7 +83,7 @@ The full flow for Substrate development will be `Pallet > Runtime > Frontend`
 | #4  | ✅ | [4-onchain-randomness](https://github.com/lowlevelers/substrate-kitites/tree/4-onchain-randomness) | Learn about onchain randomness and how to generate a random DNA for the Kitty                   |
 | #5  | ✅ | [5-frontend](https://github.com/lowlevelers/substrate-kitites/tree/5-frontend)                     | Interact with the Substrate Node from the frontend.                                             |
 | #6  | ✅ | [6-full-code](https://github.com/lowlevelers/substrate-kitites/tree/6-full-code)                   | Implement a full code for Substrate Kitties project                                             |
-| #7 | ✅ | [7-nft-pallet](https://github.com/lowlevelers/substrate-kitties/tree/7-nft-pallet)                   | Migrate to production-ready `pallet-nft` |
+| #7 | ✅ | [7-pallet-nft](https://github.com/lowlevelers/substrate-kitties/tree/7-pallet-nft)                   | Migrate to production-ready `pallet-nft` |
 | #8 | 🟡 | [8-nft-auction](https://github.com/lowlevelers/substrate-kitties/tree/8-nft-auction)   | Build NFT Auction for Substrate Kitties NFT |
 | #9 | 🟡 | [9-soulbound-nft](https://github.com/lowlevelers/substrate-kitties/tree/9-soulbound-nft) | Implement non-transferrable attribute to the Substrate Kitties NFT |
 
@@ -638,6 +638,56 @@ pub fn buy_kitty(
 ```
 
 ### Step 7: Migrate to production-ready `pallet-nft`
+Pallet NFT is a production-ready module used to build the logic for NFT collections on the Substrate blockchain. You can learn more about the NFT pallet in this wiki page: https://wiki.polkadot.network/docs/learn-nft-pallets
+
+In this Substrate Kitties workshop tutorial, we want to add the Pallet NFT to the Substrate blockchain. Previous stages only hard-coded a struct `Kitty` which is not an ideal design for an application-specific blockchain as we would expect our blockchain as a service to create their own NFT collections, not only `Kitty`.
+
+To add the Pallet NFT to our blockchain, we add this dependency line to the runtime `Cargo.toml`
+```rust
+pallet-nfts = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.42", default-features = false }
+```
+Then we need to make a few changes to the Runtime `lib.rs` code
+```rust
+parameter_types! {
+	pub NftsPalletFeatures : PalletFeatures = PalletFeatures::all_enabled();
+	pub const NftsMaxDeadlineDuration : BlockNumber = 12 * 30 * DAYS; // 12 months * 30 days
+	pub const NftsCollectionDeposit : Balance = 100;
+	pub const NftsItemDeposit : Balance = 100;
+
+	pub const MetadataDepositPerByte: Balance =  1 * DOLLARS;
+	pub const AssetDeposit: Balance = 100 * DOLLARS;
+	pub const ApprovalDeposit: Balance = 1 * DOLLARS;
+	pub const StringLimit: u32 = 50;
+	pub const MetadataDepositBase: Balance = 10 * DOLLARS;
+}
+
+impl pallet_nfts::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type CollectionId = u32;
+	type ItemId = u32;
+	type Currency = Balances;
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Locker = ();
+	type CollectionDeposit = NftsCollectionDeposit;
+	type ItemDeposit = NftsItemDeposit;
+	type MetadataDepositBase = MetadataDepositBase;
+	type AttributeDepositBase = MetadataDepositBase;
+	type DepositPerByte = MetadataDepositPerByte;
+	type StringLimit = ConstU32<256>;
+	type KeyLimit = ConstU32<64>;
+	type ValueLimit = ConstU32<256>;
+	type ApprovalsLimit = ConstU32<6>;
+	type ItemAttributesApprovalsLimit = ConstU32<30>;
+	type MaxTips = ConstU32<10>;
+	type MaxDeadlineDuration = NftsMaxDeadlineDuration;
+	type MaxAttributesPerCall = ConstU32<10>;
+	type Features = NftsPalletFeatures;
+	type OffchainSignature = Signature;
+	type OffchainPublic = <Signature as Verify>::Signer;
+	type WeightInfo = pallet_nfts::weights::SubstrateWeight<Runtime>;
+}
+```
 
 ## How to contribute
 
