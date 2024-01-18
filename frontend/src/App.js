@@ -23,6 +23,7 @@ import TemplateModule from './TemplateModule'
 import Transfer from './Transfer'
 import Upgrade from './Upgrade'
 import Kitties from './Kitties'
+import KittiesNFTCollections from './KittiesNFTCollections'
 
 function Main() {
   const { apiState, apiError, keyringState } = useSubstrateState()
@@ -73,6 +74,9 @@ function Main() {
           </Grid.Row>
           <Grid.Row>
             <Kitties />
+          </Grid.Row>
+          <Grid.Row>
+            <KittiesNFTCollections />
           </Grid.Row>
           <Grid.Row stretched>
             <Balances />
