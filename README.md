@@ -1,12 +1,12 @@
-# Substrate Kitties by TheLowLevelers
+# Substrate Kitties by OpenGuild
 
-![Group 160](https://github.com/lowlevelers/substrate-kitties/assets/56880684/9d7f9f2a-cc2a-470a-a93e-b0c5bb63c4a7)
+![Livestream_Session_2_KITTIES](https://github.com/openguild-labs/substrate-kitties/assets/56880684/3362397a-21b8-4029-85ba-8fb31fcf162a)
 
 The original version from Substrate Developer Hub is here, please give a few credits to the team behind it: https://www.shawntabrizi.com/substrate-collectables-workshop/#/
 
 > The interactive hands-on build-your-first-blockchain with [Substrate][] workshop
 
-## 🖐️ What is this version made by TheLowLevelers?
+## 🖐️ What is this version made by OpenGuild?
 
 The original version is outdated. `substrate-node-template` no longer has a concept of runtime modules but `pallet`. Hence, it is not preferable to us outdated material to learn about Substrate.
 
