@@ -1,6 +1,7 @@
 # Substrate Kitties by OpenGuild
 
-![Livestream_Session_2_KITTIES](https://github.com/openguild-labs/substrate-kitties/assets/56880684/3362397a-21b8-4029-85ba-8fb31fcf162a)
+![image](https://github.com/openguild-labs/substrate-kitties/assets/56880684/f38b36bf-8711-4dbd-91b1-90c8aa936847)
+
 
 The original version from Substrate Developer Hub is here, please give a few credits to the team behind it: https://www.shawntabrizi.com/substrate-collectables-workshop/#/
 
