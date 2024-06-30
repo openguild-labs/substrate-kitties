@@ -6,7 +6,7 @@
 The original version from Substrate Developer Hub is here, please give a few credits to the team behind it: https://www.shawntabrizi.com/substrate-collectables-workshop/#/
 
 > The interactive hands-on build-your-first-blockchain with [Substrate][] workshop
-
+  
 ## 🖐️ What is this version made by OpenGuild?
 
 The original version is outdated. `substrate-node-template` no longer has a concept of runtime modules but `pallet`. Hence, it is not preferable to us outdated material to learn about Substrate.
